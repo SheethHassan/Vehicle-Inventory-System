@@ -25,36 +25,73 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="text-gray-500">Loading dashboard…</p>;
-  if (error) return <p className="text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</p>;
+  if (loading) {
+    return (
+      <p style={{ color: 'var(--color-text-muted)' }}>Loading dashboard…</p>
+    );
+  }
+
+  if (error) {
+    return (
+      <p
+        style={{
+          color: 'var(--color-danger)',
+          background: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: '8px',
+          padding: '0.75rem 1rem',
+        }}
+      >
+        {error}
+      </p>
+    );
+  }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+      <h1
+        className="text-2xl font-bold mb-6"
+        style={{ color: 'var(--color-text-base)' }}
+      >
+        Dashboard
+      </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
         {/* Trips currently out */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Trips Currently Out</h2>
-            <Link href="/trips" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-base)' }}>
+              Trips Currently Out
+            </h2>
+            <Link
+              href="/trips"
+              className="text-sm font-medium"
+              style={{ color: 'var(--color-accent)' }}
+            >
               View all →
             </Link>
           </div>
-          <p className="text-4xl font-bold text-amber-600">{tripsOut.length}</p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-4xl font-bold" style={{ color: 'var(--color-warning)' }}>
+            {tripsOut.length}
+          </p>
+          <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             {tripsOut.length === 1 ? 'vehicle is' : 'vehicles are'} currently on a trip
           </p>
           {tripsOut.length > 0 && (
-            <ul className="mt-4 space-y-2 border-t border-gray-100 pt-4">
+            <ul
+              className="mt-4 space-y-2 pt-4"
+              style={{ borderTop: '1px solid var(--color-card-border)' }}
+            >
               {tripsOut.slice(0, 5).map((trip) => (
                 <li key={trip.id} className="flex items-center justify-between text-sm">
-                  <span className="font-mono font-medium text-gray-800">
+                  <span className="font-mono font-medium" style={{ color: 'var(--color-text-base)' }}>
                     {trip.vehicle?.registration}
                   </span>
                   <Link
                     href={`/trips/${trip.id}`}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="text-sm font-medium"
+                    style={{ color: 'var(--color-accent)' }}
                   >
                     View
                   </Link>
@@ -65,30 +102,46 @@ export default function DashboardPage() {
         </div>
 
         {/* Needs restock */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Needs Restock</h2>
-            <Link href="/items" className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-              Manage items →
+            <h2 className="text-base font-semibold" style={{ color: 'var(--color-text-base)' }}>
+              Needs Restock
+            </h2>
+            <Link
+              href="/items"
+              className="text-sm font-medium"
+              style={{ color: 'var(--color-accent)' }}
+            >
+              Manage items 
             </Link>
           </div>
-          <p className="text-4xl font-bold text-red-600">{lowStockItems.length}</p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-4xl font-bold" style={{ color: 'var(--color-danger)' }}>
+            {lowStockItems.length}
+          </p>
+          <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             {lowStockItems.length === 1 ? 'item is' : 'items are'} below reorder threshold
           </p>
           {lowStockItems.length > 0 ? (
-            <ul className="mt-4 space-y-2 border-t border-gray-100 pt-4">
+            <ul
+              className="mt-4 space-y-2 pt-4"
+              style={{ borderTop: '1px solid var(--color-card-border)' }}
+            >
               {lowStockItems.map((item) => (
                 <li key={item.id} className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-800">{item.name}</span>
-                  <span className="text-red-600 font-semibold">
+                  <span className="font-medium" style={{ color: 'var(--color-text-base)' }}>
+                    {item.name}
+                  </span>
+                  <span className="font-semibold" style={{ color: 'var(--color-danger)' }}>
                     {item.quantity_on_hand} / {item.reorder_threshold} {item.unit}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-4 text-sm text-green-600 border-t border-gray-100 pt-4">
+            <p
+              className="mt-4 text-sm pt-4"
+              style={{ borderTop: '1px solid var(--color-card-border)', color: 'var(--color-success)' }}
+            >
               All items are adequately stocked.
             </p>
           )}
@@ -96,16 +149,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-8 flex gap-3">
-        <Link
-          href="/trips/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          + New Trip
+        <Link href="/trips/new" className="btn-primary">
+           New Trip
         </Link>
-        <Link
-          href="/items"
-          className="px-4 py-2 rounded text-sm font-medium border border-gray-300 hover:bg-gray-50 transition-colors"
-        >
+        <Link href="/items" className="btn-outline">
           Manage Inventory
         </Link>
       </div>

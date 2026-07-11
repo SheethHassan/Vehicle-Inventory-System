@@ -2,7 +2,45 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { TripSummary } from '@/types';
+import type { TripSummary, TripDetail } from '@/types';
+
+// ---------------------------------------------------------------------------
+// CSV helpers (outside component — no closures needed)
+// ---------------------------------------------------------------------------
+
+function escapeCSV(value: string | number): string {
+  return `"${String(value).replace(/"/g, '""')}"`;
+}
+
+function buildCSV(trips: TripDetail[]): string {
+  const headers = [
+    'Trip ID',
+    'Vehicle',
+    'Departed',
+    'Returned',
+    'Item',
+    'SKU',
+    'Qty Taken',
+    'Qty Returned',
+    'Qty Used',
+  ];
+  const rows = trips.flatMap((trip) =>
+    trip.lines.map((line) => [
+      trip.id,
+      trip.vehicle.registration,
+      new Date(trip.departed_at).toLocaleDateString(),
+      trip.returned_at ? new Date(trip.returned_at).toLocaleDateString() : '',
+      line.item_name,
+      line.item_sku,
+      line.qty_taken,
+      line.qty_returned,
+      line.qty_used,
+    ])
+  );
+  return [headers, ...rows]
+    .map((row) => row.map(escapeCSV).join(','))
+    .join('\n');
+}
 
 type Tab = 'out' | 'returned';
 
@@ -26,6 +64,23 @@ export default function TripsPage() {
 
   useEffect(() => { fetchTrips(tab); }, [tab]);
 
+  async function handleExportCSV() {
+    // Fetch full detail for every returned trip in parallel using existing API
+    const details = await Promise.all(
+      trips.map((t) =>
+        fetch(`/api/trips/${t.id}`).then((r) => r.json() as Promise<TripDetail>)
+      )
+    );
+    const csv = buildCSV(details);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trip-history-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function formatDate(d: string) {
     return new Date(d).toLocaleString();
   }
@@ -34,30 +89,43 @@ export default function TripsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Trips</h1>
-        <Link
-          href="/trips/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          + New Trip
-        </Link>
+        <div className="flex items-center gap-3">
+          {tab === 'returned' && trips.length > 0 && (
+            <button
+              id="btn-export-csv"
+              onClick={handleExportCSV}
+              className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Export CSV
+            </button>
+          )}
+          <Link
+            href="/trips/new"
+            className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+             New Trip
+          </Link>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-gray-200">
-        {(['out', 'returned'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            id={`tab-${t}`}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              tab === t
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t === 'out' ? 'Currently Out' : 'History'}
-          </button>
-        ))}
+      <div className="flex items-center justify-between mb-4 border-b border-gray-200">
+        <div className="flex gap-1">
+          {(['out', 'returned'] as Tab[]).map((t) => (
+            <button
+              key={t}
+              id={`tab-${t}`}
+              onClick={() => setTab(t)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                tab === t
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t === 'out' ? 'Currently Out' : 'History'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading && <p className="text-gray-500">Loading trips…</p>}

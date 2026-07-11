@@ -15,6 +15,7 @@ const EMPTY_FORM = {
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,81 +119,125 @@ export default function ItemsPage() {
 
   const isLowStock = (item: Item) => item.quantity_on_hand < item.reorder_threshold;
 
+  const filteredItems = items.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Items</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Items
+          {searchQuery && (
+            <span className="ml-2 text-base font-normal text-gray-400">
+              ({filteredItems.length} result{filteredItems.length !== 1 ? 's' : ''})
+            </span>
+          )}
+        </h1>
         <button
           id="btn-create-item"
           onClick={openCreate}
           className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
         >
-          + Add Item
+           Add Item
         </button>
+      </div>
+
+      {/* Search bar */}
+      <div className="relative mb-4 max-w-sm">
+        <input
+          id="search-items"
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name or SKU..."
+          className="w-full border border-gray-300 rounded px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        {searchQuery && (
+          <button
+            id="clear-search-items"
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {loading && <p className="text-gray-500">Loading items…</p>}
       {error && <p className="text-red-600 bg-red-50 border border-red-200 rounded p-3">{error}</p>}
 
       {!loading && !error && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {['SKU', 'Name', 'Unit', 'Stock', 'Reorder At', 'Status', 'Actions'].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
-                    No items yet. Add your first item above.
-                  </td>
-                </tr>
-              )}
-              {items.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-sm text-gray-700">{item.sku}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{item.unit}</td>
-                  <td className="px-4 py-3 font-semibold text-gray-900">{item.quantity_on_hand}</td>
-                  <td className="px-4 py-3 text-gray-600">{item.reorder_threshold}</td>
-                  <td className="px-4 py-3">
-                    {isLowStock(item) ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
-                        ⚠ Low Stock
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
-                        OK
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 flex gap-2">
-                    <button
-                      id={`btn-edit-item-${item.id}`}
-                      onClick={() => openEdit(item)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      id={`btn-delete-item-${item.id}`}
-                      onClick={() => { setDeleteTarget(item); setDeleteError(null); }}
-                      className="text-red-500 hover:text-red-700 text-sm font-medium"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Empty search result — shown outside the table */}
+          {filteredItems.length === 0 && searchQuery ? (
+            <p className="py-10 text-center text-gray-400 text-sm">
+              No items match your search.
+            </p>
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {['SKU', 'Name', 'Unit', 'Stock', 'Reorder At', 'Status', 'Actions'].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredItems.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
+                        No items yet. Add your first item above.
+                      </td>
+                    </tr>
+                  )}
+                  {filteredItems.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-mono text-sm text-gray-700">{item.sku}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
+                      <td className="px-4 py-3 text-gray-600">{item.unit}</td>
+                      <td className="px-4 py-3 font-semibold text-gray-900">{item.quantity_on_hand}</td>
+                      <td className="px-4 py-3 text-gray-600">{item.reorder_threshold}</td>
+                      <td className="px-4 py-3">
+                        {isLowStock(item) ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700 border border-red-200">
+                            ⚠ Low Stock
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                            OK
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 flex gap-2">
+                        <button
+                          id={`btn-edit-item-${item.id}`}
+                          onClick={() => openEdit(item)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          id={`btn-delete-item-${item.id}`}
+                          onClick={() => { setDeleteTarget(item); setDeleteError(null); }}
+                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
       {/* Create / Edit Modal */}
